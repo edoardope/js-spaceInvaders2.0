@@ -10,7 +10,7 @@ class Player {
         this.y = this.game.height - this.height;
 
         //velocita di movimento player
-        this.speed = 0; //valori positivi muovono verso destra negativi verso sinistra
+        this.speed = 5; //valori positivi muovono verso destra negativi verso sinistra
     }
     draw(context) {
         context.fillRect(this.x, this.y, this.width, this.height);
@@ -18,7 +18,16 @@ class Player {
 
     //metodo di aggiornamento posizione player
     update() {
-        this.x += this.speed;
+
+        //movimento orizzontale
+        //controlliamo se la freccia sta venendo premuta e aggiorniamo il posizionamento del player
+        if (this.game.keys.indexOf('ArrowLeft') > -1) this.x -= this.speed;
+        if (this.game.keys.indexOf('ArrowRight') > -1) this.x += this.speed;
+
+        //limiti movimento orizzontale
+        if (this.x < 0) this.x = 0;
+        else if (this.x > this.game.width - this.width) this.x = this.game.width - this.width;
+
     }
 }
 
@@ -37,8 +46,30 @@ class Game {
         this.width = this.canvas.width;
         this.height = this.canvas.height
 
+        //array tasti premuti
+        this.keys = [];
+
         //definiamo l'istanza player
         this.Player = new Player(this);
+
+        //event listner per tasti premuti
+        window.addEventListener('keydown', e => {
+
+            //controlla che il tasto premuto non faccia parte dell'array keys
+            if (this.keys.indexOf(e.key) === -1)
+                //pusshamo il tasto premuto all'array
+                this.keys.push(e.key);
+        });
+
+        //event listner per rilascio tasto
+        window.addEventListener('keyup', e => {
+
+            //troviamo l'index dell'elemento all'inetrno dell'array keys corrispondente all tasto rilasciato
+            const index = this.keys.indexOf(e.key);
+
+            //rimuoviamo dall'array keys il tasto rilasciato 
+            if (index > -1) this.keys.splice(index, 1);
+        });
     }
     render(context) {
 
