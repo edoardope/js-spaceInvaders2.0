@@ -1,4 +1,5 @@
 class Player {
+
     constructor(game) {
         this.game = game;
         //dimensioni player
@@ -25,14 +26,60 @@ class Player {
         if (this.game.keys.indexOf('ArrowRight') > -1) this.x += this.speed;
 
         //limiti movimento orizzontale
-        if (this.x < 0) this.x = 0;
-        else if (this.x > this.game.width - this.width) this.x = this.game.width - this.width;
+        if (this.x < -this.width * 0.5) this.x = -this.width * 0.5;
+        else if (this.x > this.game.width - this.width * 0.5) this.x = this.game.width - this.width * 0.5;
 
+    }
+    //metodo per attivare il loop di sparo
+    shoot() {
+        //ritorna il projectile disponibile
+        const projectile = this.game.getProjectile();
+        //se esiste un projectile disponibile chiama il metodo start con la posizione attuale del player come argomento
+        if (projectile) projectile.start(this.x + this.width * 0.5, this.y);
     }
 }
 
-class Projectiles {
+class Projectile {
 
+    constructor() {
+        this.width = 4;
+        this.height = 20;
+        this.x = 0;
+        this.y = 0;
+        this.speed = 20;
+
+        //questa variabile servirà a definire se l'elemento è libero e pronto ad essere riutilizzato
+        this.free = true;
+    }
+    draw(context) {
+        //disegnamo il projectile solo se non è free
+        if (!this.free) {
+            context.fillRect(this.x, this.y, this.width, this.height);
+        }
+    }
+    update() {
+        //aggiorniamo il projectile solo se non è free
+        if (!this.free) {
+            this.y -= this.speed;
+            //rendiamo i projectile dinuovo disponibili una volta usciti dallo schermo invocando il metodo reset
+            if (this.y < - this.height) this.reset();
+        }
+    }
+
+    //metodo attivo quando il projectile viene utilizzato
+    start(x, y) { //siccome i projectiles partiranno dal player passiamo le coordinate come argomento
+
+        //impostiamo free a falso
+        this.free = false;
+
+        //impostiamo le coordinate
+        this.x = x - this.width * 0.5;
+        this.y = y;
+    }
+    //metodo attivo quando il projectile non viene utilizzato
+    reset() {
+        this.free = true;
+    }
 }
 
 class Enemy {
@@ -52,6 +99,13 @@ class Game {
         //definiamo l'istanza player
         this.Player = new Player(this);
 
+        this.ProjectilesPool = [];
+        //numero projectiles riutilizzabili per migliorare le performance ne useremo 10 da riutilizzare
+        this.numberOfProjectiles = 10;
+
+        //appena il gioco è avviato chiamiamo la funzione che riempie la pool di projectiles disponibili
+        this.createProjectiles();
+
         //event listner per tasti premuti
         window.addEventListener('keydown', e => {
 
@@ -59,6 +113,9 @@ class Game {
             if (this.keys.indexOf(e.key) === -1)
                 //pusshamo il tasto premuto all'array
                 this.keys.push(e.key);
+
+            //controlla se il tasto premuto è 1 corrispondente all'attaco base
+            if (e.key === '1') this.Player.shoot();
         });
 
         //event listner per rilascio tasto
@@ -77,8 +134,25 @@ class Game {
 
         this.Player.update();
 
-    }
+        //renderizza attacco base
+        this.ProjectilesPool.forEach(projectile => {
+            projectile.update();
+            projectile.draw(context);
+        })
 
+    }
+    //metodo per riempire la pool con projectiles inattivi
+    createProjectiles() {
+        for (let i = 0; i < this.numberOfProjectiles; i++) {
+            this.ProjectilesPool.push(new Projectile());
+        }
+    }
+    //metodo per recuperare un projectile non utilizzato quando serve
+    getProjectile() {
+        for (let i = 0; i < this.ProjectilesPool.length; i++) {
+            if (this.ProjectilesPool[i].free) return this.ProjectilesPool[i];
+        }
+    }
 }
 
 window.addEventListener('load', function () { //renderiziamo gli elementi solo una volta che la finestra a finito il caricamento
